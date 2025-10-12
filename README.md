@@ -48,7 +48,7 @@ Siga estes passos para rodar o projeto na sua própria máquina.
     ```bash
     # No Windows
     python -m venv .venv
-    .\.venv\Scripts\activate
+    ./.venv/Scripts/activate
 
     # No macOS / Linux
     python3 -m venv .venv
