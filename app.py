@@ -7,7 +7,7 @@ from apify_client import ApifyClient
 import time
 
 # --- CONFIGURAÇÃO ---
-PERFIS_ALVO = ["https://www.instagram.com/dalc.ufba/", "https://www.instagram.com/ufba.oficial/", "https://www.instagram.com/computacaoufba/"]
+PERFIS_ALVO = ["dalc.ufba", "ufba.oficial", "computacaoufba"]
 NOME_BANCO_DADOS = "instagram_data.db"
 
 @st.cache_data(ttl=3600) # TTL de 1 hora
@@ -56,7 +56,7 @@ def coletar_dados_apify():
 
 def carregar_dados_do_banco():
     """
-    Gerencia a coleta e a leitura. Agora exibe as mensagens de status.
+    Gerencia a coleta e a leitura, sem ele a bomba dos creditos da apify vão pro ralo meio que ele serve de cache.
     """
     try:
         arquivo_antigo = time.time() - os.path.getmtime(NOME_BANCO_DADOS) > 3600
@@ -137,4 +137,12 @@ else:
                 if post['caption']:
                     with st.expander("Ler legenda completa"):
 
-                        st.write(post['caption'])        
+                        st.write(post['caption'])
+                        
+                '''
+                Opcional - Só tirar o comentário daqui que funciona :)
+                
+                metric_cols = st.columns(2)
+                metric_cols[0].metric("❤️ Likes", f"{post.get('likes', 0):,}")
+                metric_cols[1].metric("💬 Comentários", f"{post.get('comments', 0):,}")
+                '''
