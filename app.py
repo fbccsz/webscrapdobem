@@ -10,7 +10,7 @@ import time
 PERFIS_ALVO = ["dalc.ufba", "ufba.oficial", "computacaoufba"]
 NOME_BANCO_DADOS = "instagram_data.db"
 
-@st.cache_data(ttl=3600) # TTL de 1 hora
+@st.cache_data(ttl=43200) # TTL de 12 hora
 def coletar_dados_apify():
 
     apify_token = st.secrets.get("APIFY_TOKEN")
@@ -145,4 +145,5 @@ else:
                 # metric_cols = st.columns(2)
                 # metric_cols[0].metric("❤️ Likes", f"{post.get('likes', 0):,}")
                 # metric_cols[1].metric("💬 Comentários", f"{post.get('comments', 0):,}")
+
 
