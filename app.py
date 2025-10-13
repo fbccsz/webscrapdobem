@@ -139,10 +139,10 @@ else:
 
                         st.write(post['caption'])
                         
-                '''
-                Opcional - Só tirar o comentário daqui que funciona :)
                 
-                metric_cols = st.columns(2)
-                metric_cols[0].metric("❤️ Likes", f"{post.get('likes', 0):,}")
-                metric_cols[1].metric("💬 Comentários", f"{post.get('comments', 0):,}")
-                '''
+                # Opcional - Só tirar o comentário dos de baixo que funciona :)
+                
+                # metric_cols = st.columns(2)
+                # metric_cols[0].metric("❤️ Likes", f"{post.get('likes', 0):,}")
+                # metric_cols[1].metric("💬 Comentários", f"{post.get('comments', 0):,}")
+
