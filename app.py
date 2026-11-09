@@ -10,12 +10,45 @@ import time
 PERFIS_ALVO = ["dalc.ufba", "ufba.oficial", "computacaoufba"]
 NOME_BANCO_DADOS = "instagram_data.db"
 
-@st.cache_data(ttl=43200) # TTL de 12 hora
-def coletar_dados_apify():
+def inicializar_banco():
+    conn = sqlite3.connect(NOME_BANCO_DADOS)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS posts (
+            shortcode TEXT PRIMARY KEY, profile TEXT, caption TEXT,
+            likes INTEGER, comments INTEGER, post_date TEXT, url TEXT, image_url TEXT
+        )
+    ''')
+    conn.commit()
+    return conn
 
-    apify_token = st.secrets.get("APIFY_TOKEN")
+def coletar_dados_apify():
+    conn = inicializar_banco()
+    conn.close()
+
+    apify_token = st.secrets.get("APIFY_TOKEN", "")
     if not apify_token:
         return (False, "ERRO: Token da Apify não encontrado nos Secrets do Streamlit.")
+
+    try:
+        client = ApifyClient(apify_token)
+        run_input = {"usernames": PERFIS_ALVO, "resultsLimit": 7}
+        run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
+        lista_de_perfis = client.dataset(run["defaultDatasetId"]).list_items().items
+    except Exception as e:
+        return (False, f"Falha ao contatar a Apify: {e}")
+
+    posts = []
+    for item in lista_de_perfis:
+        perfil_username = item.get("username")
+        itens = item.get("latestPosts")
+        if isinstance(itens, list):
+            posts.extend((perfil_username, post) for post in itens)
+        elif item.get("shortCode"):
+            posts.append((perfil_username or item.get("ownerUsername"), item))
+
+    if not posts:
+        chaves = sorted(lista_de_perfis[0].keys()) if lista_de_perfis else []
+        return (False, f"A Apify concluiu, mas não retornou posts. Chaves recebidas: {chaves}")
 
     conn = sqlite3.connect(NOME_BANCO_DADOS)
     cursor = conn.cursor()
@@ -26,30 +59,16 @@ def coletar_dados_apify():
             likes INTEGER, comments INTEGER, post_date TEXT, url TEXT, image_url TEXT
         )
     ''')
-    
-    try:
-        client = ApifyClient(apify_token)
-        run_input = {"usernames": PERFIS_ALVO, "resultsLimit": 7}
-        run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
-        lista_de_perfis = client.dataset(run["defaultDatasetId"]).list_items().items
-    except Exception as e:
-        conn.close()
-        return (False, f"Falha ao contatar a Apify: {e}")
-        
     posts_salvos_total = 0
-    for perfil_data in lista_de_perfis:
-        perfil_username = perfil_data.get("username")
-        lista_de_posts = perfil_data.get("latestPosts", [])
-        for post in lista_de_posts:
-            if post.get("shortCode"):
-                cursor.execute(
-                    'INSERT OR IGNORE INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    (post.get("shortCode"), perfil_username, post.get("caption"), 
-                     post.get("likesCount", 0), post.get("commentsCount", 0), 
-                     post.get("timestamp"), post.get("url"), post.get("displayUrl"))
-                )
-                posts_salvos_total += 1
-    
+    for perfil_username, post in posts:
+        cursor.execute(
+            'INSERT OR IGNORE INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (post.get("shortCode"), perfil_username or post.get("ownerUsername"), post.get("caption"),
+             post.get("likesCount", 0), post.get("commentsCount", 0),
+             post.get("timestamp"), post.get("url"), post.get("displayUrl"))
+        )
+        posts_salvos_total += cursor.rowcount
+
     conn.commit()
     conn.close()
     return (True, f"Coleta finalizada! {posts_salvos_total} posts salvos.")
@@ -58,22 +77,28 @@ def carregar_dados_do_banco():
     """
     Gerencia a coleta e a leitura, sem ele a bomba dos creditos da apify vão pro ralo meio que ele serve de cache.
     """
-    try:
-        arquivo_antigo = time.time() - os.path.getmtime(NOME_BANCO_DADOS) > 3600
-        if arquivo_antigo:
+    precisa_coletar = not os.path.exists(NOME_BANCO_DADOS)
+    if not precisa_coletar:
+        try:
+            conn = sqlite3.connect(NOME_BANCO_DADOS)
+            tabela_vazia = conn.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='posts'"
+            ).fetchone()[0] == 0 or conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0] == 0
+            conn.close()
+            precisa_coletar = tabela_vazia or time.time() - os.path.getmtime(NOME_BANCO_DADOS) > 3600
+        except sqlite3.Error:
+            precisa_coletar = True
+
+    if precisa_coletar:
+        try:
             with st.spinner("Buscando novos dados da Apify..."):
                 sucesso, mensagem = coletar_dados_apify()
                 if sucesso:
                     st.toast(mensagem, icon="🎉")
                 else:
                     st.error(mensagem)
-    except (FileNotFoundError, Exception):
-        with st.spinner("Banco de dados não encontrado. Iniciando primeira coleta..."):
-            sucesso, mensagem = coletar_dados_apify()
-            if sucesso:
-                st.toast(mensagem, icon="🎉")
-            else:
-                st.error(mensagem)
+        except Exception as e:
+            st.error(f"Falha ao iniciar a coleta: {e}")
 
     if not os.path.exists(NOME_BANCO_DADOS):
         return pd.DataFrame()
@@ -82,11 +107,12 @@ def carregar_dados_do_banco():
         df = pd.read_sql_query("SELECT * FROM posts ORDER BY post_date DESC", conn)
         conn.close()
         if not df.empty:
-            df['post_date'] = pd.to_datetime(df['post_date'])
+            df['post_date'] = pd.to_datetime(df['post_date'], errors='coerce')
+            df = df.dropna(subset=['post_date'])
         return df
     except Exception:
         return pd.DataFrame()
-    
+
 st.set_page_config(layout="wide", page_title="Painel de Informações")
 st.title("Informações")
 
@@ -111,14 +137,14 @@ else:
         options=perfis_disponiveis,
         default=perfis_disponiveis
     )
-    
+
     if not perfis_selecionados:
         st.warning("Selecione ao menos um perfil no filtro lateral.")
     else:
         df_filtrado = df[df['profile'].isin(perfis_selecionados)]
-        
+
         st.markdown(f"### Exibindo `{len(df_filtrado)}` posts:")
-        
+
         for index, post in df_filtrado.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([0.8, 0.2])
@@ -138,10 +164,10 @@ else:
                     with st.expander("Ler legenda completa"):
 
                         st.write(post['caption'])
-                        
-                
+
+
                 # Opcional - Só tirar o comentário dos de baixo que funciona :)
-                
+
                 # metric_cols = st.columns(2)
                 # metric_cols[0].metric("❤️ Likes", f"{post.get('likes', 0):,}")
                 # metric_cols[1].metric("💬 Comentários", f"{post.get('comments', 0):,}")

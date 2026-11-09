@@ -24,6 +24,13 @@ Uma aplicação web construída com Streamlit que coleta e exibe os posts mais r
 - **Pandas:** Para manipulação e estruturação dos dados.
 - **SQLite:** Como banco de dados local para armazenar os posts coletados pela aplicação na nuvem.
 
+### Atualização e persistência dos dados
+
+- A aplicação cria `instagram_data.db` automaticamente antes de iniciar uma coleta.
+- Uma nova coleta ocorre quando o banco não existe, está vazio ou tem mais de uma hora.
+- Se a Apify falhar ou retornar nenhum post, os dados válidos anteriores não são apagados.
+- O banco SQLite do Streamlit Cloud é temporário e pode ser perdido quando a aplicação reinicia. Ele não deve ser commitado no GitHub.
+
 ---
 
 ## 🚀 Como Executar Localmente
