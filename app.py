@@ -33,7 +33,12 @@ def coletar_dados_apify():
         client = ApifyClient(apify_token)
         run_input = {"usernames": PERFIS_ALVO, "resultsLimit": 7}
         run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
-        lista_de_perfis = client.dataset(run["defaultDatasetId"]).list_items().items
+        dataset_id = getattr(run, "default_dataset_id", None)
+        if dataset_id is None and isinstance(run, dict):
+            dataset_id = run.get("defaultDatasetId")
+        if not dataset_id:
+            raise RuntimeError("A execução da Apify não retornou o ID do dataset.")
+        lista_de_perfis = client.dataset(dataset_id).list_items().items
     except Exception as e:
         return (False, f"Falha ao contatar a Apify: {e}")
 
@@ -56,7 +61,10 @@ def coletar_dados_apify():
     cursor.execute('''
         CREATE TABLE posts (
             shortcode TEXT PRIMARY KEY, profile TEXT, caption TEXT,
-            likes INTEGER, comments INTEGER, post_date TEXT, url TEXT, image_url TEXT
+            likes INTEGER, comments INTEGER, post_date TEXT,Falha ao contatar a Apify: 'Run' object is not subscriptable
+
+            Nenhum dado para exibir. A coleta pode ter falhado. Verifique os logs no Streamlit Cloud.
+             url TEXT, image_url TEXT
         )
     ''')
     posts_salvos_total = 0
