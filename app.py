@@ -61,10 +61,8 @@ def coletar_dados_apify():
     cursor.execute('''
         CREATE TABLE posts (
             shortcode TEXT PRIMARY KEY, profile TEXT, caption TEXT,
-            likes INTEGER, comments INTEGER, post_date TEXT,Falha ao contatar a Apify: 'Run' object is not subscriptable
-
-            Nenhum dado para exibir. A coleta pode ter falhado. Verifique os logs no Streamlit Cloud.
-             url TEXT, image_url TEXT
+            likes INTEGER, comments INTEGER, post_date TEXT,
+            url TEXT, image_url TEXT
         )
     ''')
     posts_salvos_total = 0
