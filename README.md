@@ -1,5 +1,7 @@
 # WebScrap do Bem
 
+**Status:** Ferramenta local de coleta e visualização de dados.
+
 Painel em Python para reunir e explorar publicações de perfis do Instagram. A coleta usa a API da Apify; a interface Streamlit organiza imagens, legendas e links em uma visualização com filtros por perfil.
 
 **[Portfólio](https://www.yshdev.me/#projects)** · **[Contato](mailto:yshdev@outlook.com)**
@@ -75,6 +77,7 @@ O arquivo `instagram_data.db` é criado automaticamente e não deve ser commitad
 | `requirements.txt` | Dependências Python |
 | `.gitignore` | Exclusão de segredos e arquivos locais |
 
----
+## Manutenção
 
-Desenvolvido por [Fabrício Silva · ysh](https://www.yshdev.me/).
+Mantido por **ysh** · [Portfólio](https://www.yshdev.me/) · [Contato](mailto:yshdev@outlook.com)
+
