@@ -1,91 +1,80 @@
-# Painel de Informações de Perfis Específicos do Instagram
+# WebScrap do Bem
 
-Uma aplicação web construída com Streamlit que coleta e exibe os posts mais recentes de perfis específicos do Instagram. Os dados são coletados de forma confiável através da API da Apify e apresentados em uma interface limpa e interativa.
+Painel em Python para reunir e explorar publicações de perfis do Instagram. A coleta usa a API da Apify; a interface Streamlit organiza imagens, legendas e links em uma visualização com filtros por perfil.
 
-![Screenshot da Aplicação](https://i.imgur.com/GWYly5b.png)
+**[Portfólio](https://www.yshdev.me/#projects)** · **[Contato](mailto:yshdev@outlook.com)**
 
----
+## O que o projeto faz
 
-## ✨ Funcionalidades
+- Centraliza publicações dos perfis definidos em `PERFIS_ALVO`.
+- Permite filtrar os resultados pela origem na barra lateral.
+- Armazena os registros em SQLite e trata os dados com Pandas.
+- Atualiza a coleta quando o banco não existe, está vazio ou tem mais de uma hora.
+- Preserva os dados válidos anteriores quando a Apify falha ou não retorna publicações.
 
-- **Coleta de Dados Confiável:** Utiliza a plataforma Apify para extrair dados do Instagram, evitando bloqueios de IP e problemas de ambiente.
-- **Interface Interativa:** Construída com Streamlit para uma experiência de usuário fluida e responsiva.
-- **Cache Inteligente:** Os dados são coletados periodicamente, garantindo performance sem sobrecarregar a API.
-- **Filtro Dinâmico:** Permite ao usuário selecionar quais perfis deseja visualizar na barra lateral.
-- **Visualização Completa:** Exibe a imagem do post, legenda e um link direto para a publicação original.
+## Tecnologias
 
----
+| Componente | Tecnologia |
+| --- | --- |
+| Aplicação | Python |
+| Interface | Streamlit |
+| Coleta | Apify Client |
+| Tratamento | Pandas |
+| Persistência local | SQLite |
+| Imagens remotas | Requests |
 
-## 🛠️ Tecnologias Utilizadas
+## Executar localmente
 
-- **Python:** Linguagem principal do projeto.
-- **Streamlit:** Para a construção da interface web interativa.
-- **Apify Client:** Para interagir com a API da Apify e coletar os dados.
-- **Pandas:** Para manipulação e estruturação dos dados.
-- **SQLite:** Como banco de dados local para armazenar os posts coletados pela aplicação na nuvem.
+Requisitos: Python, Git e uma conta Apify com token de API.
 
-### Atualização e persistência dos dados
+```sh
+git clone https://github.com/fbccsz/webscrapdobem.git
+cd webscrapdobem
+python -m venv .venv
+```
 
-- A aplicação cria `instagram_data.db` automaticamente antes de iniciar uma coleta.
-- Uma nova coleta ocorre quando o banco não existe, está vazio ou tem mais de uma hora.
-- Se a Apify falhar ou retornar nenhum post, os dados válidos anteriores não são apagados.
-- O banco SQLite do Streamlit Cloud é temporário e pode ser perdido quando a aplicação reinicia. Ele não deve ser commitado no GitHub.
+Ative o ambiente virtual:
 
----
+```sh
+# Linux / macOS
+source .venv/bin/activate
 
-## 🚀 Como Executar Localmente
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
 
-Siga estes passos para rodar o projeto na sua própria máquina.
+Instale as dependências:
 
-### 1. Pré-requisitos
+```sh
+python -m pip install -r requirements.txt
+```
 
-- Python 3.8+
-- Git
-- Uma conta gratuita na [Apify](https://apify.com/) para obter seu Token de API pessoal.
+Crie `.streamlit/secrets.toml` e configure seu próprio token:
 
-### 2. Configuração do Ambiente
+```toml
+APIFY_TOKEN = "seu_token_da_apify"
+```
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/fbccsz/webscrapdobem.git
-    cd webscrapdobem
-    ```
+A pasta de segredos deve permanecer fora do versionamento. Ajuste `PERFIS_ALVO` em `app.py` conforme a finalidade da coleta e inicie a aplicação:
 
-2.  **Crie e ative um ambiente virtual:**
-    ```bash
-    # No Windows
-    python -m venv .venv
-    ./.venv/Scripts/activate
-
-    # No macOS / Linux
-    python3 -m venv .venv
-    source .venv/bin/activate
-    ```
-
-3.  **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-### 3. Configuração dos Segredos (API Token)
-
-Para rodar localmente, o Streamlit precisa de um lugar para ler seus segredos (rsrs), assim como ele faz na nuvem.
-
-1.  Na pasta raiz do seu projeto, crie uma nova pasta chamada `.streamlit`.
-2.  Dentro da pasta `.streamlit`, crie um arquivo chamado `secrets.toml`.
-3.  Abra o arquivo `secrets.toml` e adicione sua chave da Apify no seguinte formato:
-
-    ```toml
-    # .streamlit/secrets.toml
-
-    APIFY_TOKEN = "sua_chave_da_apify_aqui"
-    ```
-
-O arquivo `.gitignore` já está configurado para nunca enviar esta pasta para o GitHub.
-
-### 4. Executando a Aplicação
-
-Com tudo configurado, inicie o servidor do Streamlit com um único comando:
-
-```bash
+```sh
 streamlit run app.py
+```
+
+## Fluxo de dados
+
+A aplicação verifica o cache local, consulta a Apify quando uma atualização é necessária e normaliza os posts antes de gravar no SQLite. O Streamlit lê o banco e aplica os filtros escolhidos pelo visitante.
+
+O arquivo `instagram_data.db` é criado automaticamente e não deve ser commitado. Em hospedagens com disco temporário, incluindo Streamlit Cloud, os dados podem desaparecer após reinicializações; esse armazenamento funciona como cache, sem garantia de persistência durável.
+
+## Estrutura
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `app.py` | Coleta, cache, banco e interface |
+| `requirements.txt` | Dependências Python |
+| `.gitignore` | Exclusão de segredos e arquivos locais |
+
+---
+
+Desenvolvido por [Fabrício Silva · ysh](https://www.yshdev.me/).
