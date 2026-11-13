@@ -6,20 +6,10 @@ import requests
 from apify_client import ApifyClient
 import time
 
+from banco import NOME_BANCO_DADOS, inicializar_banco, substituir_posts
+
 # --- CONFIGURAÇÃO ---
 PERFIS_ALVO = ["dalc.ufba", "ufba.oficial", "computacaoufba"]
-NOME_BANCO_DADOS = "instagram_data.db"
-
-def inicializar_banco():
-    conn = sqlite3.connect(NOME_BANCO_DADOS)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS posts (
-            shortcode TEXT PRIMARY KEY, profile TEXT, caption TEXT,
-            likes INTEGER, comments INTEGER, post_date TEXT, url TEXT, image_url TEXT
-        )
-    ''')
-    conn.commit()
-    return conn
 
 def coletar_dados_apify():
     conn = inicializar_banco()
@@ -55,28 +45,7 @@ def coletar_dados_apify():
         chaves = sorted(lista_de_perfis[0].keys()) if lista_de_perfis else []
         return (False, f"A Apify concluiu, mas não retornou posts. Chaves recebidas: {chaves}")
 
-    conn = sqlite3.connect(NOME_BANCO_DADOS)
-    cursor = conn.cursor()
-    cursor.execute("DROP TABLE IF EXISTS posts")
-    cursor.execute('''
-        CREATE TABLE posts (
-            shortcode TEXT PRIMARY KEY, profile TEXT, caption TEXT,
-            likes INTEGER, comments INTEGER, post_date TEXT,
-            url TEXT, image_url TEXT
-        )
-    ''')
-    posts_salvos_total = 0
-    for perfil_username, post in posts:
-        cursor.execute(
-            'INSERT OR IGNORE INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (post.get("shortCode"), perfil_username or post.get("ownerUsername"), post.get("caption"),
-             post.get("likesCount", 0), post.get("commentsCount", 0),
-             post.get("timestamp"), post.get("url"), post.get("displayUrl"))
-        )
-        posts_salvos_total += cursor.rowcount
-
-    conn.commit()
-    conn.close()
+    posts_salvos_total = substituir_posts(posts)
     return (True, f"Coleta finalizada! {posts_salvos_total} posts salvos.")
 
 def carregar_dados_do_banco():
