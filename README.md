@@ -63,6 +63,18 @@ A pasta de segredos deve permanecer fora do versionamento. Ajuste `PERFIS_ALVO` 
 streamlit run app.py
 ```
 
+## Testes
+
+Os testes de persistência usam somente a biblioteca padrão do Python e não
+exigem token Apify, conexão com a internet ou instalação do Streamlit:
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+Eles verificam a substituição do cache, a deduplicação dos posts e o rollback
+que preserva os registros anteriores em caso de erro durante a gravação.
+
 ## Fluxo de dados
 
 A aplicação verifica o cache local, consulta a Apify quando uma atualização é necessária e normaliza os posts antes de gravar no SQLite. O Streamlit lê o banco e aplica os filtros escolhidos pelo visitante.
